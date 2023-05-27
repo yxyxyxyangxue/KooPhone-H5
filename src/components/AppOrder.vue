@@ -1,5 +1,7 @@
 <template>
   <div class="order">
+    <span>{{getLastDay()}}</span>
+    <span v-if="isLogin">{{mobilemask}}</span>
     <van-button type="primary" @click="handleReceive">0元领取</van-button>
   </div>
   <van-dialog v-model:show="smsShow" show-cancel-button style="padding:20px 20px 0;"
@@ -11,10 +13,10 @@
         v-model="smsCode"
         center
         clearable
-        placeholder="请输入短信验证码"
+        placeholder="请输入验证码"
       >
         <template #button>
-          <van-button size="small" type="primary" @click="getSMSCode" v-if="!isGetCode">发送验证码</van-button>
+          <van-button size="small" type="primary" @click="getSMSCode" v-if="!isGetCode">获取验证码</van-button>
           <van-button size="small" type="primary" v-else disabled>{{time}}秒后重试</van-button>
         </template>
       </van-field>
@@ -26,9 +28,10 @@ import {
   tokenValidate,
   signEncrypt,
   checkOrder,
-  getTraffic,
   getSMS,
-  smsCodeCheck } from '../api/index';
+  smsCodeCheck,
+  getTraffic,
+  getResponse } from '../api/index';
 
 import { showFailToast, showSuccessToast } from 'vant';
 import 'vant/es/toast/style';
@@ -46,9 +49,13 @@ export default {
       isGetCode: false,
       token:'',
       userInformation:'',
+      mobilemask: '',
       mobile: '',
       smsCode:'',
-      time: 60
+      sourceOrderNo: '',
+      startTime: '',
+      time: 60,
+      trafficTimer:null
     }
   },
   created:function() {
@@ -66,18 +73,16 @@ export default {
     },
     // 校验token是否有效
     checkToken:function(type) {
-      let head = {
-        idtype:'',
-        apptype:''
-      };
       let params = {
+        appType: '5',
         token: this.token,
         userInformation: type === 'default' ? '' : this.userInformation
       };
       // 校验token是否有效
-      tokenValidate(head, params).then(res => {
-        if (res.header.resultcode === '103000') {
-          // TODO 登录成功，校验是否已订购
+      tokenValidate(params).then(res => {
+        if (res.success) {
+          this.mobilemask = res.data.msmsdnmask;
+          this.mobile = res.data.msisdn;
           this.isLogin = true;
           this.checkOrder();
         } else {
@@ -89,61 +94,57 @@ export default {
         }
       },
       err => {
-        console.log(err);
+        showFailToast(err.errMssage);
       });
+    },
+    // 校验是否已订购
+    checkOrder:function() {
+      checkOrder({telephone:this.mobile}).then(res => {
+        if (res.success) {
+          this.isOrder = true;
+          this.$router.push('/AppSuccess');
+        }
+      },err => {
+        showFailToast(err.errMssage);
+      })
     },
     // 4G,5G取号
     getMobileToken:function() {
-      let sign = window.ywAuth.getSign({appid: '1', version: '1.0'});
+      let sign = window.ywAuth.getSign({appid: '5', version: '1.0'});
       let params = {
-        sign: sign
+        originSignature: sign
       }
       signEncrypt(params).then(res => {
         // 加密后的签名拉去授权页，用户同意后，拿到token
-        if(res.sign) {
-
+        if(res.success) {
           window.ywAuth.getTokenInfo({
             data: {
               version: '1.0',
               appId: '', //移动提供 TODO
-              sign: res.sign,
+              sign: res.data.signature,
               authPageType: '1',
-              expandParams: 'phoneNum=18811222211',
-              ieTest: '0'
+              expandParams: 'phoneNum=18811222211', //联调随便写，生产可以不填
+              ieTest: '0' //0启用测试地址，生产不传
             },
-            success:(res) => {
-              this.token = res.token;
-              this.userInformation = res.userInformation;
-              // TODO 这里的返参userInformation传给校验接口
+            success:(result) => {
+              this.token = result.token;
+              this.userInformation = result.userInformation;
               this.checkToken('mobile');
             },
             err:function(err) {
-              //TODO,弹窗弹出提示
-              console.log(err.YDData.message);
+              showFailToast(err.YDData.message);
             }
           })
         }
       },err => {
-        console.log(err);
-      });
-    },
-    // 判断是否已领取
-    checkOrder() {
-      checkOrder().then(res => {
-        if (res.success) {
-          this.isOrder = true;
-        }
+        showFailToast(err.errMssage);
       });
     },
     // 点击 0元领取
     handleReceive:function() {
       if (this.isLogin) {
-        if (this.isOrder) {
-          // TODO 跳转到生效页
-          this.$router.push('/AppSuccess');
-        } else {
-          this.getTraffic();
-        }
+        this.startTime = new Date().getTime();
+        this.getTraffic();
       } else {
         // 弹出短信验证码弹窗
         this.smsShow = true;
@@ -151,15 +152,39 @@ export default {
     },
     // 领取流量
     getTraffic:function() {
-      getTraffic().then(res => {
-        // 定时器轮询调
+      getTraffic({telephone:this.mobile}).then(res => {
         if (res.success) {
-          this.$router.push('/AppSuccess');
+          this.sourceOrderNo = res.data.sourceOrderNo;
+          this.handleProcessing();
         }
       },
       err => {
-        console.log(err);
+        showFailToast(err.errMssage);
       })
+    },
+    // 定时器轮询调用接口
+    handleProcessing:function() {
+      clearTimeout(this.trafficTimer);
+      // 超过多久超时
+      if (new Date().getTime() - this.startTime > 60 * 1000) {
+        clearTimeout(this.trafficTimer);
+        showFailToast('连接超时');
+        return;
+      }
+
+      this.trafficTimer = setTimeout(() => {
+        getResponse({
+          telephone: this.mobile,
+          sourceOrderNo: this.sourceOrderNo
+        }).then(res => {
+          // 履约回调
+          if (res.success) {
+            this.$router.push('/AppSuccess');
+          } else {
+            this.handleProcessing();
+          }
+        })
+      }, 3000);
     },
     // 获取验证码
     getSMSCode:function() {
@@ -172,7 +197,10 @@ export default {
         showFailToast('请输入正确的手机号码');
         return;
       }
-      getSMS().then(res => {
+      let smsParams = {
+        msisdn: this.mobile
+      }
+      getSMS(smsParams).then(res => {
         if (res.success) {
           showSuccessToast('验证码发送成功');
           this.isGetCode = true;
@@ -186,21 +214,28 @@ export default {
           },1000);
         }
       },err => {
-        showFailToast(err);
+        showFailToast(err.errMssage);
       })
 
     },
     // 校验验证码
     smsCodeCheck:function() {
-      smsCodeCheck(this.smsCode).then(res => {
+      let checkParams = {
+        authtype:'DUP',
+        loginid:this.mobile,
+        loginidtype: '1',
+        password: this.smsCode
+      }
+      smsCodeCheck(checkParams).then(res => {
         if (res.success) {
-          // TODO 验证码验证成功
           this.smsShow = false;
-          this.checkOrder();
+          this.mobilemask = res.data.msisdn;
         } else {
-          // TODO 验证码验证失败
           showFailToast('请输入正确的验证码');
         }
+      },
+      err => {
+        showFailToast(err.errMssage);
       })
     },
     // 验证码确认事件
@@ -230,9 +265,18 @@ export default {
     },
     onBeforeClose:function() {
       return false;
+    },
+    // 获取当月最后一天日期
+    getLastDay:function(){
+      var year = new Date().getFullYear(); 
+      var month = new Date().getMonth() + 1; 
+      var lastDate = new Date(year, month , 0).getDate();
+      month = month < 10 ? '0' + month : month ;
+      let day = `${year}年${month}月${lastDate}日`;
+      return day;
     }
   }
-}
+} 
 </script>
 
 <style scoped>

@@ -8,56 +8,58 @@ export const getAllData = (headers, params) => { return request({
   }) 
 };
 // token校验
-export const tokenValidate = (headers, params) => { 
+export const tokenValidate = (data) => { 
   return request({
-    url: 'api/uniTokenValidate',
+    url: 'koophone/v1/auth/phone',
     method: 'post',
-    headers,
-    params
+    data
   })
 };
 // 签名加密
-export const signEncrypt = (headers, params) => { 
+export const signEncrypt = (params) => { 
   return request({
-    url: 'api/signEncrypt',
+    url: 'koophone/v1/auth/sign',
     method: 'post',
-    headers,
     params
   })
 };
-// 是否已领取
-export const checkOrder = (headers, params) => { 
+// 是否已订购
+export const checkOrder = (params) => { 
   return request({
-    url: 'api/checkOrder',
+    url: 'koophone/v1/order/receiveStatus',
     method: 'post',
-    headers,
-    params
-  })
-};
-// 领取流量
-export const getTraffic = (headers, params) => { 
-  return request({
-    url: 'api/getTraffic',
-    method: 'post',
-    headers,
     params
   })
 };
 // 获取验证码
-export const getSMS = (headers, params) => { 
+export const getSMS = (params) => { 
   return request({
-    url: 'api/getSMS',
+    url: 'koophone/v1/auth/sendSmsCode',
     method: 'post',
-    headers,
     params
   })
 };
 // 验证码校验
-export const smsCodeCheck = (headers, params) => { 
+export const smsCodeCheck = (params) => { 
   return request({
-    url: 'api/smsCodeCheck',
+    url: 'koophone/v1/auth/login',
     method: 'post',
-    headers,
+    params
+  })
+};
+// 领取流量
+export const getTraffic = (params) => { 
+  return request({
+    url: 'koophone/v1/order/add',
+    method: 'post',
+    params
+  })
+};
+// 履约结果查询
+export const getResponse = (params) => { 
+  return request({
+    url: 'koophone/v1/auth/phone',
+    method: 'post',
     params
   })
 };
