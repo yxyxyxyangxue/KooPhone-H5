@@ -6,6 +6,7 @@ import router from './router'
 import { Button, Icon, Dialog, Field, CellGroup, Toast } from 'vant'
 
 import 'vant/lib/index.css'
+import '../src/style.css'
 
 
 const app = createApp(App);
