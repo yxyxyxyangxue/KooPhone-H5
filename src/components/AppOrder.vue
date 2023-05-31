@@ -12,23 +12,47 @@
       </div>
     </div>
   </div>
-  <van-dialog v-model:show="smsShow" show-cancel-button style="padding:20px 20px 0;"
-    @confirm="dialogConfirm"
-    @cancel="dialogCancel"
-    :before-close="onBeforeClose">
-      <van-field v-model="mobile" placeholder="请输入手机号码" />
+  <!-- 短信验证登录 -->
+  <div v-if="smsShow" class="sms-layout">
+    <img src="../assets/close-icon.png" alt="" class="close-icon" @click="dialogCancel"/>
+    <div class="sms-center">
+      <img src="../assets/sms-bgd.png" alt="" class="sms-bgd"/>
+      <p>登录</p>
+      <van-cell-group inset>
+        <van-field v-model="mobile" label="" placeholder="请输入手机号" class="sms-input"/>
+      </van-cell-group>
       <van-field
         v-model="smsCode"
         center
         clearable
         placeholder="请输入验证码"
+        class="sms-cell code-input"
       >
         <template #button>
           <van-button size="small" type="primary" @click="getSMSCode" v-if="!isGetCode">获取验证码</van-button>
           <van-button size="small" type="primary" v-else disabled>{{time}}秒后重试</van-button>
         </template>
       </van-field>
-  </van-dialog>
+      <div class="sms-btn" @click="dialogConfirm">确认</div>
+    </div>
+  </div>
+  <div class="mask" v-if="smsShow || dialogShow"></div>
+  <!-- 提示弹窗 -->
+  <div v-if="dialogShow" class="sms-layout">
+    <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm"/>
+    <div class="sms-center">
+      <div class="dialog-success" v-if="isSuccess">
+        <div class="dialog-content">恭喜领取成功</div>
+        <img src="../assets/success-bgd.png" alt=""/>
+        <p class="">马上去体验特权吧！</p>
+      </div>
+      <div v-else>
+        <p class="toast-title">{{toastTitle}}</p>
+        <p class="toast-title" v-if="isOrder">请勿重复领取，谢谢！</p>
+      </div>
+      <div class="sms-btn" @click="toastConfirm">确认</div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -86,8 +110,11 @@ export default {
       }],
       isLogin: false,
       isOrder: false,
+      isSuccess:false,
       smsShow: false,
+      dialogShow: false,
       isGetCode: false,
+      toastTitle:'免流权益领取失败，请稍后再试',
       token:'',
       userInformation:'',
       mobilemask: '',
@@ -184,8 +211,18 @@ export default {
     // 点击 0元领取
     handleReceive:function() {
       if (this.isLogin) {
-        this.startTime = new Date().getTime();
-        this.getTraffic();
+        checkOrder({telephone:this.mobile}).then(res => {
+          if (res.success) {
+            this.isOrder = true;
+            this.dialogShow = true;
+            this.toastTitle = '您已成功领取免流权益，';
+          } else {
+            this.startTime = new Date().getTime();
+            this.getTraffic();
+          }
+        },err => {
+          showFailToast(err.errMssage);
+        })
       } else {
         // 弹出短信验证码弹窗
         this.smsShow = true;
@@ -220,10 +257,22 @@ export default {
         }).then(res => {
           // 履约回调
           if (res.success) {
+            this.dialogShow = true;
+            this.isSuccess = true;
             this.$router.push('/AppSuccess');
           } else {
             this.handleProcessing();
           }
+        },err => {
+          const toastMap = {
+            '001': '免流权益领取失败，请稍后再试',
+            '002': '您的号码暂时无法参与，感谢您的支持！',
+            '003': '您已成功领取免流权益，',
+            '004': '网络异常，请稍后再试',
+            '005': '亲，您来晚了，活动已结束'
+          };
+          this.dialogShow = true;
+          this.toastTitle = toastMap[err.errCode];
         })
       }, 3000);
     },
@@ -257,7 +306,6 @@ export default {
       },err => {
         showFailToast(err.errMssage);
       })
-
     },
     // 校验验证码
     smsCodeCheck:function() {
@@ -304,8 +352,10 @@ export default {
       this.smsCode = '';
       this.smsShow = false;
     },
-    onBeforeClose:function() {
-      return false;
+    // 提示窗关闭/确认
+    toastConfirm:function() {
+      this.dialogShow = false;
+      this.isSuccess = false;
     },
     // 获取当月最后一天日期
     getLastDay:function(){
@@ -327,5 +377,92 @@ export default {
   background:url("../assets/home.jpg") no-repeat;
   background-size:100% 100%;
   position: relative;
+}
+.sms-layout {
+  position: absolute;
+  top:26%;
+  left:50%;
+  transform: translateX(-50%);
+  z-index:9;
+}
+.sms-center {
+  background-color:#fff;
+  border-radius: 10px;
+  padding: 32px 14px 26px;
+  width: 273px;
+  box-sizing: border-box;
+  position: relative;
+  clear: both;
+}
+.close-icon {
+  width:26px;
+  height:26px;
+  padding-bottom:10px;
+  float: right;
+}
+.sms-bgd {
+  width:100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.sms-layout p {
+  font-size: 16px;
+  color: #000;
+  font-weight: 500;
+  text-align: center;
+  margin:0;
+  padding-bottom:30px;    
+  z-index: 1;
+  position: relative;
+}
+.sms-input {
+  border-bottom: 1px solid rgb(169,211,253);
+}
+.sms-cell {
+  margin:0 16px 40px;
+  box-sizing: border-box;
+  width: 86%;
+  padding-right: 0;
+}
+.sms-cell.van-cell::before {
+  position: absolute;
+  box-sizing: border-box;
+  content: " ";
+  bottom:0;
+  left:4px;
+  height:1px;
+  width:53%;
+  background-color: rgb(169,211,253);
+}
+.sms-cell.van-cell::after {
+  display: none;
+}
+.sms-layout .sms-center .toast-title {
+  font-size:12px;
+  text-align: center;
+  color:rgba(0,0,0,0.8);
+  padding-top:28px;
+  padding-bottom:40px;
+}
+.dialog-success {
+  font-size:16px;
+  color:rgb(237,147,38);
+  text-align: center;
+  line-height: 1.2;
+}
+.dialog-success img {
+  width:100%;
+  background-size:100% auto;
+}
+.dialog-success p {
+  font-size:12px;
+  text-align: center;
+  color:rgba(0,0,0,0.8);
+  padding-bottom: 22px;
+}
+.dialog-success .dialog-content {
+  position: relative;
+  top:10px;
 }
 </style>
