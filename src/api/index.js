@@ -26,7 +26,7 @@ export const signEncrypt = (params) => {
 // 是否已订购
 export const checkOrder = (params) => { 
   return request({
-    url: 'koophone/v1/order/receiveStatus',
+    url: 'koophone/v1/order/status',
     method: 'post',
     params
   })
@@ -51,14 +51,6 @@ export const smsCodeCheck = (params) => {
 export const getTraffic = (params) => { 
   return request({
     url: 'koophone/v1/order/add',
-    method: 'post',
-    params
-  })
-};
-// 履约结果查询
-export const getResponse = (params) => { 
-  return request({
-    url: 'koophone/v1/auth/phone',
     method: 'post',
     params
   })

@@ -2,7 +2,6 @@
   <div class="success">
      <span class="phone-mask">123****9374{{mobilemask}}</span>
     <div class="order-center">
-      <div class="order-btn success-btn" @click="handleSuccess"></div>
       <p class="order-info">活动时间：即日起-{{new Date().getFullYear()}}年12月31日</p>
       <div class="order-rule">
         <p class="order-title">——·活动规则·——</p>
@@ -60,11 +59,7 @@ export default {
   },
   created:function() {
   },
-  methods: {
-    handleSuccess:function() {
-
-    }
-  }
+  methods: {}
 }
 </script>
 
@@ -74,6 +69,7 @@ export default {
   height: 100%;
   background:url("../assets/success.jpg") no-repeat;
   background-size:100% 100%;
+  position: relative;
 }
 .success-btn {
   background:url("../assets/use-btn.png") no-repeat;

@@ -39,7 +39,7 @@
   <div class="mask" v-if="smsShow || dialogShow"></div>
   <!-- 提示弹窗 -->
   <div v-if="dialogShow" class="sms-layout">
-    <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm"/>
+    <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm('0')"/>
     <div class="sms-center">
       <div class="dialog-success" v-if="isSuccess">
         <div class="dialog-content">恭喜领取成功</div>
@@ -50,7 +50,7 @@
         <p class="toast-title">{{toastTitle}}</p>
         <p class="toast-title" v-if="isOrder">请勿重复领取，谢谢！</p>
       </div>
-      <div class="sms-btn" @click="toastConfirm">确认</div>
+      <div class="sms-btn" @click="toastConfirm('1')">确认</div>
     </div>
   </div>
 </template>
@@ -62,8 +62,7 @@ import {
   checkOrder,
   getSMS,
   smsCodeCheck,
-  getTraffic,
-  getResponse } from '../api/index';
+  getTraffic } from '../api/index';
 
 import { showFailToast, showSuccessToast } from 'vant';
 import 'vant/es/toast/style';
@@ -114,7 +113,7 @@ export default {
       smsShow: false,
       dialogShow: false,
       isGetCode: false,
-      toastTitle:'免流权益领取失败，请稍后再试',
+      toastTitle:'',
       token:'',
       userInformation:'',
       mobilemask: '',
@@ -251,15 +250,13 @@ export default {
       }
 
       this.trafficTimer = setTimeout(() => {
-        getResponse({
-          telephone: this.mobile,
-          sourceOrderNo: this.sourceOrderNo
+        checkOrder({
+          telephone: this.mobile
         }).then(res => {
           // 履约回调
           if (res.success) {
             this.dialogShow = true;
             this.isSuccess = true;
-            this.$router.push('/AppSuccess');
           } else {
             this.handleProcessing();
           }
@@ -353,9 +350,12 @@ export default {
       this.smsShow = false;
     },
     // 提示窗关闭/确认
-    toastConfirm:function() {
+    toastConfirm:function(type) {
       this.dialogShow = false;
       this.isSuccess = false;
+      if (this.isSuccess && type === '1') {
+        this.$router.push('/AppSuccess');
+      }
     },
     // 获取当月最后一天日期
     getLastDay:function(){
@@ -387,17 +387,17 @@ export default {
 }
 .sms-center {
   background-color:#fff;
-  border-radius: 10px;
-  padding: 32px 14px 26px;
-  width: 273px;
+  border-radius: 0.625rem;
+  padding: 2rem 0.875rem 1.625rem;
+  width: 17rem;
   box-sizing: border-box;
   position: relative;
   clear: both;
 }
 .close-icon {
-  width:26px;
-  height:26px;
-  padding-bottom:10px;
+  width:1.625rem;
+  height:1.625rem;
+  padding-bottom:0.625rem;
   float: right;
 }
 .sms-bgd {
@@ -407,20 +407,20 @@ export default {
   left: 0;
 }
 .sms-layout p {
-  font-size: 16px;
+  font-size: 1rem;
   color: #000;
   font-weight: 500;
   text-align: center;
   margin:0;
-  padding-bottom:30px;    
+  padding-bottom:1.875rem;    
   z-index: 1;
   position: relative;
 }
 .sms-input {
-  border-bottom: 1px solid rgb(169,211,253);
+  border-bottom: 0.0625rem solid rgb(169,211,253);
 }
 .sms-cell {
-  margin:0 16px 40px;
+  margin:0 1rem 2.5rem;
   box-sizing: border-box;
   width: 86%;
   padding-right: 0;
@@ -430,8 +430,8 @@ export default {
   box-sizing: border-box;
   content: " ";
   bottom:0;
-  left:4px;
-  height:1px;
+  left:0.25rem;
+  height:0.0625rem;
   width:53%;
   background-color: rgb(169,211,253);
 }
@@ -439,14 +439,14 @@ export default {
   display: none;
 }
 .sms-layout .sms-center .toast-title {
-  font-size:12px;
+  font-size:0.75rem;
   text-align: center;
   color:rgba(0,0,0,0.8);
-  padding-top:28px;
-  padding-bottom:40px;
+  padding-top:1.75rem;
+  padding-bottom:2.5rem;
 }
 .dialog-success {
-  font-size:16px;
+  font-size:1rem;
   color:rgb(237,147,38);
   text-align: center;
   line-height: 1.2;
@@ -456,13 +456,13 @@ export default {
   background-size:100% auto;
 }
 .dialog-success p {
-  font-size:12px;
+  font-size:0.75rem;
   text-align: center;
   color:rgba(0,0,0,0.8);
-  padding-bottom: 22px;
+  padding-bottom: 1.375rem;
 }
 .dialog-success .dialog-content {
   position: relative;
-  top:10px;
+  top:0.625rem;
 }
 </style>
