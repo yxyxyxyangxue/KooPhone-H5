@@ -1,5 +1,5 @@
 <template>
-  <router-link to="/AppOrder"></router-link>
+  <router-link to="/AppOrder" class="app-home"></router-link>
   <router-view></router-view>
 </template>
 

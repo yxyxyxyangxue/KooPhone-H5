@@ -15,9 +15,8 @@ module.exports = {
   },
   devServer: {
     proxy: {
-      // 配置多个代理
-      "/api": {
-        target: "http://112.125.90.247:81",
+      "/apaas": {
+        target: "http://139.196.180.61:80",
         secure:true,
         changeOrigin: true,
         pathRewrite: {

@@ -1,0 +1,84 @@
+
+.phone-mask {
+    font-size: 0.75rem;
+    color:#fff;
+    position: absolute;
+    right:1rem;
+    top:1rem;
+    line-height:1.2;
+  }
+  .order-center {
+    width:80%;
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+  }
+  .order-btn {
+    width:100%;
+    height: 6rem;
+    background: url('./assets/buy-btn.png') no-repeat center;
+    background-size: contain;
+  }
+  .order-info {
+    color:#fff;
+    font-size:0.875rem;
+    padding-bottom:1rem;
+    margin:0;
+    text-align: center;
+  }
+  .order-rule {
+    width:100%;
+    background-color:rgb(169,214,255);
+    border-radius: 2rem 2rem 0 0;
+    border:0.375rem solid rgb(117,188,255);
+    border-bottom:none;
+    font-size: 0.94rem;
+    color:#363f6c;
+    font-weight: bold;
+    padding:0.94rem;
+    box-sizing: border-box;
+    line-height:1.2;
+  }
+  .order-rule p {
+    margin:0;
+  }
+  .order-rule .order-title {
+    padding-bottom:0.94rem;
+    text-align: center;
+  }
+  .order-rule .order-subtitle {
+    color:#191a1d;
+    font-size:0.875rem;
+  }
+  .order-rule .order-content {
+    color:#40586e;
+    font-size:0.75rem;
+  }
+.mask {
+    width:100%;
+    height:100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index:7;
+    background-color: #000;
+    opacity: 0.6;
+}
+.sms-btn {
+    width: 10rem;
+    height: 2.3rem;
+    text-align: center;
+    line-height:2.3rem;
+    color:#fff;
+    font-size:0.875rem;
+    font-weight: bold;
+    background-color: rgb(36, 108, 255);
+    border-radius: 1.2rem;
+    margin:0 auto;
+}
+@media screen and (min-width:820px){
+    #app {
+        width: 820px;
+        margin: 0 auto;
+    }
+}
