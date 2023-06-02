@@ -8,15 +8,15 @@ const AppSuccess = () => import('../components/AppSuccess')
 const routes =[
     {
         path: '/', 
-        redirect: '/AppOrder',
+        redirect: '/apporder',
     },
     {
-        path: '/AppOrder',
+        path: '/apporder',
         name: 'AppOrder',
         component: AppOrder
     },
     {
-        path: '/AppSuccess',
+        path: '/appsuccess',
         name: 'AppSuccess',
         component: AppSuccess
     }

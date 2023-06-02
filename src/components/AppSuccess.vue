@@ -1,12 +1,17 @@
 <template>
   <div class="success">
-     <span class="phone-mask">123****9374{{mobilemask}}</span>
+    <span class="phone-mask">123****9374{{mobilemask}}</span>
     <div class="order-center">
       <p class="order-info">活动时间：即日起-{{new Date().getFullYear()}}年12月31日</p>
       <div class="order-rule">
         <p class="order-title">——·活动规则·——</p>
-        <div v-for="item in ruleList" :key="item.id">
-          <span :class="item.type === 'title' ? 'order-subtitle' : 'order-content'">{{item.content}}</span>
+        <div class="order-body">
+          <div v-for="item in ruleList" :key="item.id">
+            <span class="order-subtitle" v-if="item.type === 'title'">{{item.content}}</span>
+            <div v-for="child in item.content" v-else :key="child">
+              <span class="order-content">{{child}}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -24,27 +29,27 @@ export default {
       ruleList:[{
         id:0,
         type: 'title',
-        content:'1、用户对象'
+        content: '1、用户对象'
       },{
         id:1,
         type: 'content',
-        content:'仅限中国移动用户（不含WAP不限量套餐用户、副卡用户、物联网卡用户）'
+        content:['仅限中国移动用户（不含不限量套餐用户、副卡用户、物联网卡用户）']
       },{
         id:2,
         type: 'title',
-        content:'2、活动时间'
+        content:'2、开展时间'
       },{
         id:3,
         type: 'content',
-        content:`即日起～${new Date().getFullYear()}年12月31日`
+        content:[`即日起～2023年12月31日（如延期开展，另行通知）`]
       },{
         id:4,
         type: 'title',
-        content:'3、奖品说明'
+        content:'3、定向流量说明'
       },{
         id:5,
         type: 'content',
-        content:'云手机定向流量：用户每月可享0元30GB云手机-进入云机内使用（不含应用上传）免流量。具体适用范围见第7点。'
+        content:['（1）名称：移动云手机0元30GB定向流量包','（2）流量内容：移动云手机定向流量，30GB/月，不结转，当月清零','（3）资费：0元']
       },{
         id:6,
         type: 'title',
@@ -52,7 +57,47 @@ export default {
       },{
         id:7,
         type: 'content',
-        content:'云手机客户端（）'
+        content:['生效以10086短信通知为准，自生效之日起至2023年12月31日。']
+      },{
+        id:8,
+        type: 'title',
+        content: '5、定向流量查询'
+      },{
+        id:9,
+        type: 'content',
+        content:['用户可通过10086或【中国移动APP-套餐余量】中查询移动云手机定向流量当月的使用量。（不同省查询路径可能有所差异）']
+      },{
+        id:10,
+        type: 'title',
+        content: '6、定向流量退订'
+      },{
+        id:11,
+        type: 'content',
+        content:['用户可通过拨打10086或【中国移动APP-已订业务】进行退订，退订次月生效。']
+      },{
+        id:12,
+        type: 'title',
+        content: '7、定向流量适用范围'
+      },{
+        id:13,
+        type: 'content',
+        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能不在免流量范围）']
+      },{
+        id:14,
+        type: 'title',
+        content: '8、其他'
+      },{
+        id:15,
+        type: 'content',
+        content:['（1）如话费余额不足将无法开通，需用户续费后再尝试。','（1）如话费余额不足将无法开通，需用户续费后再尝试。','（3）若当月移动云手机定向流量使用超出30GB，则超出部分默认按用户当前资费套餐执行结算。','（4）移动云手机定向流量的使用遵循各省每月流量总量封顶规则，总流量使用超出封顶额度后用户可能会断网或降速，详询本地10086。','（5）用户需使用开通该30G定向流量的手机账号登录使用移动云手机客户端时，才能进行免流量。']
+      },{
+        id:16,
+        type: 'title',
+        content: '9、联系我们'
+      },{
+        id:17,
+        type: 'content',
+        content:['如有咨询或建议，可通过以下途径联系我们：','（1）移动云手机APP：移动云手机APP-个人中心-联系客服','（2）微信公众号：进入“中国移动云手机”，点击自助服务-联系我们']
       }],
       mobilemask:''
     }
