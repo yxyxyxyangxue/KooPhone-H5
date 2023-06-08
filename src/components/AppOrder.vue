@@ -1,6 +1,9 @@
 <template>
   <div class="order">
-    <span class="phone-mask">123****9374{{mobilemask}}</span>
+    <div class="head"> 
+      <div class="phone-icon"></div>
+      <span class="phone-mask">{{mobilemask}}</span>
+    </div>
     <div class="order-center">
       <div class="order-btn" @click="handleReceive"></div>
       <p class="order-info" v-if="expireTime">活动时间：即日起-{{expireTime}}</p>
@@ -53,7 +56,7 @@
       </div>
       <div v-else>
         <p class="toast-title">{{toastTitle}}</p>
-        <p class="toast-title" v-if="isOrder">请勿重复领取，谢谢！</p>
+        <p class="toast-title" v-if="isRepeat">请勿重复领取，谢谢！</p>
       </div>
       <div class="sms-btn" @click="toastConfirm('1')">确认</div>
     </div>
@@ -69,7 +72,7 @@ import {
   smsCodeCheck,
   getTraffic } from '../api/index';
 
-import { showFailToast, showSuccessToast } from 'vant';
+import { showFailToast, showSuccessToast,showLoadingToast, closeToast } from 'vant';
 import 'vant/es/toast/style';
 
 export default {
@@ -161,11 +164,13 @@ export default {
         'kp.freetraffic.1002':'登录失败',
         'kp.freetraffic.2000':'下单失败',
         'kp.freetraffic.2001':'下单结果未返回',
+        'kp.freetraffic.2002':'幂等校验失败，请重试',
         'kp.freetraffic.9999':'未知异常'
       },
       isLogin: false,
       isOrder: false,
       isSuccess:false,
+      isRepeat:false,
       smsShow: false,
       dialogShow: false,
       isGetCode: false,
@@ -188,7 +193,7 @@ export default {
   methods: {
     // 获取url上的token
     getToken:function() {
-      this.token = window.location.search.split('=')[1];
+      this.token = window.location.search.split('&')[0].split('=')[1];
       if (this.token) {
         this.checkToken('default');
       } else {
@@ -204,8 +209,8 @@ export default {
       };
       // 校验token是否有效
       tokenValidate(params).then(res => {
-        if (res.success) {
-          this.mobilemask = res.data.msmsdnmask;
+        if (res.data.success) {
+          this.mobilemask = res.data.msisdnmask;
           this.mobile = res.data.msisdn;
           this.isLogin = true;
           this.checkOrder();
@@ -214,71 +219,95 @@ export default {
           if (type === 'default') {
             // url token校验失败，4g取号
             this.getMobileToken();
+          } else {
+            showFailToast(this.messageMap[res.data.errCode]);
           }
         }
       },
       err => {
-        showFailToast(this.messageMap[err.errCode]);
+        if(err.data.errCode) {
+          showFailToast(this.messageMap[err.data.errCode]);
+        }
       });
     },
     // 校验是否已订购
     checkOrder:function() {
       checkOrder({telephone:this.mobile}).then(res => {
-        if (res.success && res.data.status === 'TRUE') {
-          this.expireTime = res.data.expireTime
+        if (res.data.success && res.data.data.status === 'TRUE') {
+          let expireTime = res.data.expireTime.split('');
+          expireTime.splice(4,0,'年');
+          expireTime.splice(7,0,'月')
+          expireTime.push('日');
+          this.expireTime = expireTime.join('');
           this.isOrder = true;
+          window.sessionStorage.setItem('mobilemask', this.mobilemask);
+          window.sessionStorage.setItem('expireTime', this.expireTime);
           this.$router.push('/appsuccess');
+        } else {
+          showFailToast(this.messageMap[res.data.errCode]);
         }
       },err => {
-        showFailToast(this.messageMap[err.errCode]);
+        if(err.data.errCode) {
+          showFailToast(this.messageMap[err.data.errCode]);
+        }
       })
     },
     // 4G,5G取号
     getMobileToken:function() {
-      let sign = window.ywAuth.getSign({appid: '5', version: '1.0'});
+      let sign = window.ywAuth.getSign({appid: '000621', version: '1.2'});
       let params = {
         originSignature: sign
       }
       signEncrypt(params).then(res => {
         // 加密后的签名拉去授权页，用户同意后，拿到token
-        if(res.success) {
+        if(res.data.success) {
           window.ywAuth.getTokenInfo({
             data: {
-              version: '1.0',
-              appId: '', //移动提供 TODO
-              sign: res.data.signature,
+              version: '1.2',
+              appId: '000621',
+              sign: res.data.data.signature,
               authPageType: '1',
               expandParams: 'phoneNum=18811222211', //联调随便写，生产可以不填
-              ieTest: '0' //0启用测试地址，生产不传
+              isTest: '0' //0启用测试地址，生产不传
             },
             success:(result) => {
+              console.log(result,'11');
               this.token = result.token;
               this.userInformation = result.userInformation;
               this.checkToken('mobile');
             },
             err:function(err) {
+              console.log(err,'err');
               showFailToast(err.YDData.message);
             }
-          })
+          });
+        } else {
+          showFailToast(this.messageMap[res.data.errCode]);
         }
       },err => {
-        showFailToast(this.messageMap[err.errCode]);
+        if(err.data.errCode) {
+          showFailToast(this.messageMap[err.data.errCode]);
+        }
       });
+
     },
     // 点击 0元领取
     handleReceive:function() {
       if (this.isLogin) {
         checkOrder({telephone:this.mobile}).then(res => {
-          if (res.success && res.data.status === 'TRUE') {
+          if (res.data.success && res.data.data.status === 'TRUE') {
             this.isOrder = true;
             this.dialogShow = true;
+            this.isRepeat = true;
             this.toastTitle = '您已成功领取免流权益，';
           } else {
             this.startTime = new Date().getTime();
             this.getTraffic();
           }
         },err => {
-          showFailToast(this.messageMap[err.errCode]);
+          if(err.data.errCode) {
+            showFailToast(this.messageMap[err.data.errCode]);
+          }
         })
       } else {
         // 弹出短信验证码弹窗
@@ -287,14 +316,25 @@ export default {
     },
     // 领取流量
     getTraffic:function() {
+      showLoadingToast({
+        duration:0,
+        forbidClick:true,
+        message:'请稍后...'
+      });
       getTraffic({telephone:this.mobile}).then(res => {
-        if (res.success) {
+        if (res.data.success) {
           this.sourceOrderNo = res.data.sourceOrderNo;
           this.handleProcessing();
+        } else if(res.data.errCode === 'kp.freetraffic.2001') {
+          this.handleProcessing();
+        } else if(res.data.errCode === 'kp.freetraffic.2002') {
+          showFailToast(this.messageMap[res.data.errCode]);
         }
       },
       err => {
-        showFailToast(this.messageMap[err.errCode]);
+        if(err.data.errCode) {
+          showFailToast(this.messageMap[err.data.errCode]);
+        }
       })
     },
     // 定时器轮询调用接口
@@ -302,6 +342,7 @@ export default {
       clearTimeout(this.trafficTimer);
       // 超过3秒超时
       if (new Date().getTime() - this.startTime > 3 * 1000) {
+        closeToast();
         clearTimeout(this.trafficTimer);
         showFailToast('请求超时');
         return;
@@ -312,25 +353,29 @@ export default {
           telephone: this.mobile
         }).then(res => {
           // 履约回调
-          if (res.success) {
+          if (res.data.success) {
             this.expireTime = res.data.expireTime;
-            if (res.data.status === 'TRUE') {
+            if (res.data.data.status === 'TRUE') {
+              closeToast();
               this.dialogShow = true;
               this.isSuccess = true;
-            } else if (res.data.status === 'PENDING') {
+            } else if (res.data.data.status === 'PENDING') {
               this.handleProcessing();
+            } else {
+                const toastMap = {
+                  'PROCESS': '您已成功领取免流权益，',
+                  'CANCELING': '您已成功领取免流权益，',
+                  'FALSE': '免流权益领取失败，请稍后再试'
+                };
+                this.dialogShow = true;
+                this.toastTitle = toastMap[res.data.status];
+                this.isRepeat = res.data.status !== 'FALSE';
             }
           }
         },err => {
-          const toastMap = {
-            '001': '免流权益领取失败，请稍后再试',
-            '002': '您的号码暂时无法参与，感谢您的支持！',
-            '003': '您已成功领取免流权益，',
-            '004': '网络异常，请稍后再试',
-            '005': '亲，您来晚了，活动已结束'
-          };
-          this.dialogShow = true;
-          this.toastTitle = toastMap[err.errCode];
+          if(err.data.errCode) {
+            showFailToast(this.messageMap[err.data.errCode]);
+          }
         })
       }, 3000);
     },
@@ -346,10 +391,11 @@ export default {
         return;
       }
       let smsParams = {
+        apptype:'5',
         msisdn: this.mobile
       }
       getSMS(smsParams).then(res => {
-        if (res.success) {
+        if (res.data.success) {
           showSuccessToast('验证码发送成功');
           this.isGetCode = true;
           let timer = setInterval(() => {
@@ -360,9 +406,13 @@ export default {
               this.time = 60;
             }
           },1000);
+        } else {
+          showFailToast(this.messageMap[res.data.errCode]);
         }
       },err => {
-        showFailToast(this.messageMap[err.errCode]);
+        if(err.data.errCode) {
+          showFailToast(this.messageMap[err.data.errCode]);
+        }
       })
     },
     // 校验验证码
@@ -374,15 +424,17 @@ export default {
         password: this.smsCode
       }
       smsCodeCheck(checkParams).then(res => {
-        if (res.success) {
+        if (res.data.success) {
           this.smsShow = false;
           this.mobilemask = res.data.msisdn;
         } else {
-          showFailToast('请输入正确的验证码');
+          showFailToast(this.messageMap[res.data.errCode]);
         }
       },
       err => {
-        showFailToast(this.messageMap[err.errCode]);
+        if(err.data.errCode) {
+          showFailToast(this.messageMap[err.data.errCode]);
+        }
       })
     },
     // 验证码确认事件
@@ -414,7 +466,10 @@ export default {
     toastConfirm:function(type) {
       this.dialogShow = false;
       this.isSuccess = false;
+      this.isRepeat = false;
       if (this.isSuccess && type === '1') {
+        window.sessionStorage.setItem('mobilemask', this.mobilemask);
+        window.sessionStorage.setItem('expireTime', this.expireTime);
         this.$router.push('/appsuccess');
       }
     },
@@ -434,9 +489,11 @@ export default {
 <style scoped>
 .order {
   width: 100%;
-  height: 100%;
-  background:url("../assets/home.jpg") no-repeat;
-  background-size:100% 100%;
+  overflow: auto;
+  background-color: rgb(35,139,254);
+  background-image: url('../assets/home.jpg');
+  background-repeat: no-repeat;
+  background-size: 100% auto;
   position: relative;
 }
 .sms-layout {

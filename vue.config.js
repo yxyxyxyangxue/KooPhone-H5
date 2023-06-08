@@ -6,6 +6,7 @@ const { VantResolver } = require('unplugin-vue-components/resolvers');
 const ComponentsPlugin = require('unplugin-vue-components/webpack');
 
 module.exports = {
+  publicPath: '/freetraffic/',
   configureWebpack: {
     plugins: [
       ComponentsPlugin({
@@ -16,12 +17,12 @@ module.exports = {
   devServer: {
     proxy: {
       "/apaas": {
-        target: "http://139.196.180.61:80",
+        target: "http://cc-hwy.cmtest.xyz",
         secure:true,
         changeOrigin: true,
         pathRewrite: {
           // 路径重写，
-          "^/api": "" // 替换target中的请求地址
+          "^/apaas": "/apaas" // 替换target中的请求地址
         }
       },
     }

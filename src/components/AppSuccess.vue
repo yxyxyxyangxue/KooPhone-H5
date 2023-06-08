@@ -1,8 +1,12 @@
 <template>
   <div class="success">
-    <span class="phone-mask">123****9374{{mobilemask}}</span>
+    <div class="head"> 
+      <div class="phone-icon"></div>
+      <span class="phone-mask">{{mobilemask}}</span>
+    </div>
     <div class="order-center">
-      <p class="order-info">活动时间：即日起-{{new Date().getFullYear()}}年12月31日</p>
+      <div class="order-btn success-btn" @click="handleReceive"></div>
+      <p class="order-info">活动时间：即日起-{{expireTime}}</p>
       <div class="order-rule">
         <p class="order-title">——·活动规则·——</p>
         <div class="order-body">
@@ -99,25 +103,53 @@ export default {
         type: 'content',
         content:['如有咨询或建议，可通过以下途径联系我们：','（1）移动云手机APP：移动云手机APP-个人中心-联系客服','（2）微信公众号：进入“中国移动云手机”，点击自助服务-联系我们']
       }],
-      mobilemask:''
+      mobilemask:'',
+      expireTime:''
     }
   },
   created:function() {
+    this.mobilemask = window.sessionStorage.getItem('mobilemask');
+    this.expireTime = window.sessionStorage.getItem('expireTime');
   },
-  methods: {}
+  methods: {
+    handleReceive:function() {
+      let u = navigator.userAgent;
+      let isAndroid = u.indexOf('Android') > -1 || u.indexOf('Adr') > -1;
+      if(!isAndroid) {
+        // h5云手机页面
+        window.location = '';
+      } else {
+        if(window.location.search.split('&')[1].split('=')[1] === 'app') {
+          // app内跳转
+        } else{
+          try {
+            window.location = '...'; //schema链接或者universal link
+            window.setTimeout(function() {
+                window.location = "..."; //android下载地址  
+            }, 500);
+          } catch (e) {
+            console.lof(e);
+          }
+        }
+      }
+
+    }
+  }
 }
 </script>
 
 <style scoped>
 .success {
   width: 100%;
-  height: 100%;
-  background:url("../assets/success.jpg") no-repeat;
-  background-size:100% 100%;
+  overflow: auto;
+  background-color: rgb(35,139,254);
+  background-image:url("../assets/success.png");
+  background-repeat: no-repeat;
+  background-size:100% auto;
   position: relative;
-}
+} 
 .success-btn {
-  background:url("../assets/use-btn.png") no-repeat;
-  background-size: 100% 100%;
-}
+  background:url("../assets/use-btn.png") no-repeat center;
+  background-size: contain;
+} 
 </style>
