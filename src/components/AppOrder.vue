@@ -193,8 +193,13 @@ export default {
   methods: {
     // 获取url上的token
     getToken:function() {
-      this.token = window.location.search.split('&')[0].split('=')[1];
-      if (this.token) {
+      if(window.location.search.includes('token=')) {
+        let search = window.location.search.split('&');
+        search.forEach(item => {
+          if(item.includes('token')) {
+            this.token = item.split('=')[1];
+          }
+        })
         this.checkToken('default');
       } else {
         this.getMobileToken();
@@ -203,6 +208,7 @@ export default {
     // 校验token是否有效
     checkToken:function(type) {
       let params = {
+        appId: type === 'default' ? '001326' : '000621',
         appType: '5',
         token: this.token,
         userInformation: type === 'default' ? '' : this.userInformation
@@ -219,8 +225,6 @@ export default {
           if (type === 'default') {
             // url token校验失败，4g取号
             this.getMobileToken();
-          } else {
-            showFailToast(this.messageMap[res.data.errCode]);
           }
         }
       },
@@ -266,18 +270,15 @@ export default {
               version: '1.2',
               appId: '000621',
               sign: res.data.data.signature,
-              authPageType: '1',
-              expandParams: 'phoneNum=18811222211', //联调随便写，生产可以不填
+              expandParams: 'phoneNum=18811222211', //联调随便s写，生产可以不
               isTest: '0' //0启用测试地址，生产不传
             },
             success:(result) => {
-              console.log(result,'11');
               this.token = result.token;
               this.userInformation = result.userInformation;
               this.checkToken('mobile');
             },
             err:function(err) {
-              console.log(err,'err');
               showFailToast(err.YDData.message);
             }
           });
@@ -289,7 +290,6 @@ export default {
           showFailToast(this.messageMap[err.data.errCode]);
         }
       });
-
     },
     // 点击 0元领取
     handleReceive:function() {
@@ -327,12 +327,14 @@ export default {
           this.handleProcessing();
         } else if(res.data.errCode === 'kp.freetraffic.2001') {
           this.handleProcessing();
-        } else if(res.data.errCode === 'kp.freetraffic.2002') {
+        } else {
+          closeToast();
           showFailToast(this.messageMap[res.data.errCode]);
         }
       },
       err => {
         if(err.data.errCode) {
+          closeToast();
           showFailToast(this.messageMap[err.data.errCode]);
         }
       })
@@ -419,6 +421,7 @@ export default {
     smsCodeCheck:function() {
       let checkParams = {
         authtype:'DUP',
+        apptype: '5',
         loginid:this.mobile,
         loginidtype: '1',
         password: this.smsCode
@@ -426,7 +429,13 @@ export default {
       smsCodeCheck(checkParams).then(res => {
         if (res.data.success) {
           this.smsShow = false;
-          this.mobilemask = res.data.msisdn;
+          let msisdn = res.data.data.msisdn;
+          msisdn = msisdn.split('');
+          msisdn.splice(3,4,'****');
+          msisdn = msisdn.join('');
+          this.mobilemask = msisdn;
+          showSuccessToast('登录成功');
+          this.isLogin = true;
         } else {
           showFailToast(this.messageMap[res.data.errCode]);
         }

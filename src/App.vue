@@ -16,5 +16,6 @@ html, body, #app {
   max-width: 46.8rem;
   overflow-x: hidden;
   margin: auto;
+  position: relative;
 }
 </style>

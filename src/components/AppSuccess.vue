@@ -119,7 +119,7 @@ export default {
         // h5云手机页面
         window.location = '';
       } else {
-        if(window.location.search.split('&')[1].split('=')[1] === 'app') {
+        if(window.location.search.includes('origin=1')) {
           // app内跳转
         } else{
           try {
@@ -128,7 +128,7 @@ export default {
                 window.location = "..."; //android下载地址  
             }, 500);
           } catch (e) {
-            console.lof(e);
+            console.log(e);
           }
         }
       }
