@@ -2,11 +2,15 @@
   <div class="order">
     <div class="head"> 
       <div class="phone-icon"></div>
-      <span class="phone-mask">{{mobilemask}}</span>
+      <span class="phone-mask" v-if="mobilemask">{{mobilemask}}</span>
     </div>
     <div class="order-center">
-      <div class="order-btn" @click="handleReceive"></div>
-      <p class="order-info" v-if="expireTime">活动时间：即日起-{{expireTime}}</p>
+      <div class="order-btn" @click="handleReceive">0元领取</div>
+      <p class="order-info">每月可享30G移动云手机定向流量</p>
+      <p class="order-info pb16">
+        <span>成功领取</span>
+        <span class="order-em"> 可在移动云手机APP、H5和微信小程序享受免流服务</span>
+      </p>
       <div class="order-rule">
         <p class="order-title">——·活动规则·——</p>
         <div class="order-body">
@@ -21,44 +25,49 @@
     </div>
   </div>
   <!-- 短信验证登录 -->
-  <div v-if="smsShow" class="sms-layout">
-    <img src="../assets/close-icon.png" alt="" class="close-icon" @click="dialogCancel"/>
-    <div class="sms-center">
-      <img src="../assets/sms-bgd.png" alt="" class="sms-bgd"/>
-      <p>登录</p>
-      <van-cell-group inset>
-        <van-field v-model="mobile" label="" placeholder="请输入手机号" class="sms-input"/>
-      </van-cell-group>
-      <van-field
-        v-model="smsCode"
-        center
-        clearable
-        placeholder="请输入验证码"
-        class="sms-cell code-input"
-      >
-        <template #button>
-          <van-button size="small" type="primary" @click="getSMSCode" v-if="!isGetCode">获取验证码</van-button>
-          <van-button size="small" type="primary" v-else disabled>{{time}}秒后重试</van-button>
-        </template>
-      </van-field>
-      <div class="sms-btn" @click="dialogConfirm">确认</div>
+  <div v-if="smsShow" class="mask">
+    <div class="sms-layout">
+      <img src="../assets/close-icon.png" alt="" class="close-icon" @click="dialogCancel"/>
+      <div class="sms-center">
+        <img src="../assets/sms-bgd.png" alt="" class="sms-bgd"/>
+        <p>登录</p>
+        <van-cell-group inset>
+          <van-field v-model="mobile" label="" placeholder="请输入手机号" class="sms-input"/>
+        </van-cell-group>
+        <van-field
+          v-model="smsCode"
+          center
+          clearable
+          placeholder="请输入验证码"
+          class="sms-cell code-input"
+        >
+          <template #button>
+            <van-button size="small" type="primary" @click="getSMSCode" v-if="!isGetCode">获取验证码</van-button>
+            <van-button size="small" type="primary" v-else disabled>{{time}}秒后重试</van-button>
+          </template>
+        </van-field>
+        <div class="sms-btn" @click="dialogConfirm">确认</div>
+      </div>
     </div>
   </div>
-  <div class="mask" v-if="smsShow || dialogShow"></div>
   <!-- 提示弹窗 -->
-  <div v-if="dialogShow" class="sms-layout">
-    <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm('0')"/>
-    <div class="sms-center">
-      <div class="dialog-success" v-if="isSuccess">
-        <div class="dialog-content">恭喜领取成功</div>
-        <img src="../assets/success-bgd.png" alt=""/>
-        <p class="">马上去体验特权吧！</p>
+  <div v-if="dialogShow" class="mask">
+    <div class="sms-layout">
+      <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm('0')"/>
+      <div class="sms-center">
+        <div class="dialog-success" v-if="isSuccess">
+          <div class="dialog-content">恭喜领取成功</div>
+          <img src="../assets/success-bgd.png" alt=""/>
+          <p class="">马上去体验特权吧！</p>
+        </div>
+        <div v-else>
+          <p class="toast-title">
+            <span>{{toastTitle}}</span>
+            <span class="toast-info" v-if="isRepeat">请勿重复领取，谢谢！</span>
+          </p>
+        </div>
+        <div class="sms-btn" @click="toastConfirm('1')">确认</div>
       </div>
-      <div v-else>
-        <p class="toast-title">{{toastTitle}}</p>
-        <p class="toast-title" v-if="isRepeat">请勿重复领取，谢谢！</p>
-      </div>
-      <div class="sms-btn" @click="toastConfirm('1')">确认</div>
     </div>
   </div>
 </template>
@@ -184,11 +193,20 @@ export default {
       startTime: '',
       expireTime:'',
       time: 60,
-      trafficTimer:null
+      trafficTimer:null,
+      channelSrc:''
     }
   },
   created:function() {
     this.getToken();
+    if (window.location.search.includes('channelSrc=')) {
+        let search = window.location.search.split('&');
+        search.forEach(item => {
+          if(item.includes('channelSrc')) {
+            this.channelSrc = item.split('=')[1];
+          }
+        })
+    }
   },
   methods: {
     // 获取url上的token
@@ -216,8 +234,8 @@ export default {
       // 校验token是否有效
       tokenValidate(params).then(res => {
         if (res.data.success) {
-          this.mobilemask = res.data.msisdnmask;
-          this.mobile = res.data.msisdn;
+          this.mobilemask = res.data.data.msisdnmask;
+          this.mobile = res.data.data.msisdn;
           this.isLogin = true;
           this.checkOrder();
         } else {
@@ -246,9 +264,8 @@ export default {
           this.isOrder = true;
           window.sessionStorage.setItem('mobilemask', this.mobilemask);
           window.sessionStorage.setItem('expireTime', this.expireTime);
+          window.sessionStorage.setItem('channelSrc', this.channelSrc);
           this.$router.push('/appsuccess');
-        } else {
-          showFailToast(this.messageMap[res.data.errCode]);
         }
       },err => {
         if(err.data.errCode) {
@@ -298,6 +315,7 @@ export default {
           if (res.data.success && res.data.data.status === 'TRUE') {
             this.isOrder = true;
             this.dialogShow = true;
+            document.documentElement.style.overflowY = 'hidden';
             this.isRepeat = true;
             this.toastTitle = '您已成功领取免流权益，';
           } else {
@@ -312,6 +330,7 @@ export default {
       } else {
         // 弹出短信验证码弹窗
         this.smsShow = true;
+        document.documentElement.style.overflowY = 'hidden';
       }
     },
     // 领取流量
@@ -323,7 +342,7 @@ export default {
       });
       getTraffic({telephone:this.mobile}).then(res => {
         if (res.data.success) {
-          this.sourceOrderNo = res.data.sourceOrderNo;
+          this.sourceOrderNo = res.data.data.sourceOrderNo;
           this.handleProcessing();
         } else if(res.data.errCode === 'kp.freetraffic.2001') {
           this.handleProcessing();
@@ -356,10 +375,11 @@ export default {
         }).then(res => {
           // 履约回调
           if (res.data.success) {
-            this.expireTime = res.data.expireTime;
+            this.expireTime = res.data.data.expireTime;
             if (res.data.data.status === 'TRUE') {
               closeToast();
               this.dialogShow = true;
+              document.documentElement.style.overflowY = 'hidden';
               this.isSuccess = true;
             } else if (res.data.data.status === 'PENDING') {
               this.handleProcessing();
@@ -370,8 +390,9 @@ export default {
                   'FALSE': '免流权益领取失败，请稍后再试'
                 };
                 this.dialogShow = true;
-                this.toastTitle = toastMap[res.data.status];
-                this.isRepeat = res.data.status !== 'FALSE';
+                document.documentElement.style.overflowY = 'hidden';
+                this.toastTitle = toastMap[res.data.data.status];
+                this.isRepeat = res.data.data.status !== 'FALSE';
             }
           }
         },err => {
@@ -429,6 +450,7 @@ export default {
       smsCodeCheck(checkParams).then(res => {
         if (res.data.success) {
           this.smsShow = false;
+          document.documentElement.style.overflowY = 'auto';
           let msisdn = res.data.data.msisdn;
           msisdn = msisdn.split('');
           msisdn.splice(3,4,'****');
@@ -470,15 +492,18 @@ export default {
       this.mobile = '';
       this.smsCode = '';
       this.smsShow = false;
+      document.documentElement.style.overflowY = 'auto';
     },
     // 提示窗关闭/确认
     toastConfirm:function(type) {
       this.dialogShow = false;
+      document.documentElement.style.overflowY = 'auto';
       this.isSuccess = false;
       this.isRepeat = false;
       if (this.isSuccess && type === '1') {
         window.sessionStorage.setItem('mobilemask', this.mobilemask);
         window.sessionStorage.setItem('expireTime', this.expireTime);
+        window.sessionStorage.setItem('channelSrc', this.channelSrc);
         this.$router.push('/appsuccess');
       }
     },
@@ -498,7 +523,7 @@ export default {
 <style scoped>
 .order {
   width: 100%;
-  overflow: auto;
+  overflow: hidden;
   background-color: rgb(35,139,254);
   background-image: url('../assets/home.jpg');
   background-repeat: no-repeat;
@@ -507,10 +532,10 @@ export default {
 }
 .sms-layout {
   position: absolute;
-  top:26%;
+  top:50%;
   left:50%;
-  transform: translateX(-50%);
-  z-index:9;
+  transform: translate(-50%,-50%);
+  z-index:101;
 }
 .sms-center {
   background-color:#fff;
@@ -571,6 +596,9 @@ export default {
   color:rgba(0,0,0,0.8);
   padding-top:1.75rem;
   padding-bottom:2.5rem;
+}
+.sms-layout .sms-center .toast-info {
+  display: inline-block;
 }
 .dialog-success {
   font-size:1rem;
