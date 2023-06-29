@@ -255,8 +255,10 @@ export default {
     // 校验是否已订购
     checkOrder:function() {
       checkOrder({telephone:this.mobile}).then(res => {
-        if (res.data.success && res.data.data.status === 'TRUE') {
-          let expireTime = res.data.expireTime.split('');
+        if (res.data.success && 
+        (res.data.data.status === 'TRUE' || 
+        res.data.data.status === 'PROCESS' || res.data.data.status === 'CANCELING')) {
+          let expireTime = res.data.data.expireTime.split('');
           expireTime.splice(4,0,'年');
           expireTime.splice(7,0,'月')
           expireTime.push('日');
@@ -287,7 +289,7 @@ export default {
               version: '1.2',
               appId: '000621',
               sign: res.data.data.signature,
-              expandParams: 'phoneNum=18811222211', //联调随便s写，生产可以不
+              expandParams: `phoneNum=${encodeURIComponent(18878352653)}`, //联调随便s写，生产可以不
               isTest: '0' //0启用测试地址，生产不传
             },
             success:(result) => {
@@ -365,7 +367,7 @@ export default {
       if (new Date().getTime() - this.startTime > 3 * 1000) {
         closeToast();
         clearTimeout(this.trafficTimer);
-        showFailToast('请求超时');
+        showFailToast('领取超时');
         return;
       }
 
@@ -384,16 +386,23 @@ export default {
             } else if (res.data.data.status === 'PENDING') {
               this.handleProcessing();
             } else {
-                const toastMap = {
-                  'PROCESS': '您已成功领取免流权益，',
-                  'CANCELING': '您已成功领取免流权益，',
-                  'FALSE': '免流权益领取失败，请稍后再试'
-                };
-                this.dialogShow = true;
-                document.documentElement.style.overflowY = 'hidden';
-                this.toastTitle = toastMap[res.data.data.status];
-                this.isRepeat = res.data.data.status !== 'FALSE';
+              closeToast();
+              const toastMap = {
+                'PROCESS': '您已成功领取免流权益，',
+                'CANCELING': '您已成功领取免流权益，',
+                'FALSE': '免流权益领取失败，请稍后再试'
+              };
+              this.dialogShow = true;
+              document.documentElement.style.overflowY = 'hidden';
+              this.toastTitle = toastMap[res.data.data.status];
+              this.isRepeat = res.data.data.status !== 'FALSE';
             }
+          } else {
+            closeToast();
+            clearTimeout(this.trafficTimer);
+            this.dialogShow = true;
+            document.documentElement.style.overflowY = 'hidden';
+            this.toastTitle = '免流权益领取失败，请稍后再试';
           }
         },err => {
           if(err.data.errCode) {
