@@ -58,7 +58,7 @@
         <div class="dialog-success" v-if="isSuccess">
           <div class="dialog-content">恭喜领取成功</div>
           <img src="../assets/success-bgd.png" alt=""/>
-          <p class="">马上去体验特权吧！</p>
+          <p>具体开通情况/时间以短信通知为准</p>
         </div>
         <div v-else>
           <p class="toast-title">
@@ -198,7 +198,14 @@ export default {
     }
   },
   created:function() {
-    this.getToken();
+    if (!window.sessionStorage.getItem('isLogin')) {
+      this.getToken();
+    } else {
+      this.mobilemask = window.sessionStorage.getItem('mobilemask');
+      this.mobile = window.sessionStorage.getItem('mobile');
+      this.isLogin = window.sessionStorage.getItem('isLogin');
+      this.checkOrder();
+    }
     if (window.location.search.includes('channelSrc=')) {
         let search = window.location.search.split('&');
         search.forEach(item => {
@@ -237,6 +244,9 @@ export default {
           this.mobilemask = res.data.data.msisdnmask;
           this.mobile = res.data.data.msisdn;
           this.isLogin = true;
+          window.sessionStorage.setItem('mobilemask', this.mobilemask);
+          window.sessionStorage.setItem('mobile', this.mobile);
+          window.sessionStorage.setItem('isLogin', this.isLogin);
           this.checkOrder();
         } else {
           // 登录失败
@@ -264,7 +274,6 @@ export default {
           expireTime.push('日');
           this.expireTime = expireTime.join('');
           this.isOrder = true;
-          window.sessionStorage.setItem('mobilemask', this.mobilemask);
           window.sessionStorage.setItem('expireTime', this.expireTime);
           window.sessionStorage.setItem('channelSrc', this.channelSrc);
           this.$router.push('/appsuccess');
@@ -312,6 +321,8 @@ export default {
     },
     // 点击 0元领取
     handleReceive:function() {
+      this.isSuccess = false;
+      this.isRepeat = false;
       if (this.isLogin) {
         checkOrder({telephone:this.mobile}).then(res => {
           if (res.data.success && res.data.data.status === 'TRUE') {
@@ -344,13 +355,15 @@ export default {
       });
       getTraffic({telephone:this.mobile}).then(res => {
         if (res.data.success) {
-          this.sourceOrderNo = res.data.data.sourceOrderNo;
-          this.handleProcessing();
-        } else if(res.data.errCode === 'kp.freetraffic.2001') {
-          this.handleProcessing();
+          closeToast();
+          this.dialogShow = true;
+          document.documentElement.style.overflowY = 'hidden';
+          this.isSuccess = true;
         } else {
           closeToast();
-          showFailToast(this.messageMap[res.data.errCode]);
+          this.dialogShow = true;
+          document.documentElement.style.overflowY = 'hidden';
+          this.toastTitle = '免流权益领取失败，请稍后再试';
         }
       },
       err => {
@@ -363,8 +376,8 @@ export default {
     // 定时器轮询调用接口
     handleProcessing:function() {
       clearTimeout(this.trafficTimer);
-      // 超过3秒超时
-      if (new Date().getTime() - this.startTime > 3 * 1000) {
+      // 超过5秒超时
+      if (new Date().getTime() - this.startTime > 5 * 1000) {
         closeToast();
         clearTimeout(this.trafficTimer);
         showFailToast('领取超时');
@@ -380,6 +393,7 @@ export default {
             this.expireTime = res.data.data.expireTime;
             if (res.data.data.status === 'TRUE') {
               closeToast();
+              clearTimeout(this.trafficTimer);
               this.dialogShow = true;
               document.documentElement.style.overflowY = 'hidden';
               this.isSuccess = true;
@@ -387,6 +401,7 @@ export default {
               this.handleProcessing();
             } else {
               closeToast();
+              clearTimeout(this.trafficTimer);
               const toastMap = {
                 'PROCESS': '您已成功领取免流权益，',
                 'CANCELING': '您已成功领取免流权益，',
@@ -406,6 +421,8 @@ export default {
           }
         },err => {
           if(err.data.errCode) {
+            closeToast();
+            clearTimeout(this.trafficTimer);
             showFailToast(this.messageMap[err.data.errCode]);
           }
         })
@@ -467,6 +484,10 @@ export default {
           this.mobilemask = msisdn;
           showSuccessToast('登录成功');
           this.isLogin = true;
+          window.sessionStorage.setItem('mobilemask', this.mobilemask);
+          window.sessionStorage.setItem('mobile', this.mobile);
+          window.sessionStorage.setItem('isLogin', this.isLogin);
+          this.checkOrder();
         } else {
           showFailToast(this.messageMap[res.data.errCode]);
         }
@@ -507,8 +528,6 @@ export default {
     toastConfirm:function(type) {
       this.dialogShow = false;
       document.documentElement.style.overflowY = 'auto';
-      this.isSuccess = false;
-      this.isRepeat = false;
       if (this.isSuccess && type === '1') {
         window.sessionStorage.setItem('mobilemask', this.mobilemask);
         window.sessionStorage.setItem('expireTime', this.expireTime);
@@ -516,15 +535,6 @@ export default {
         this.$router.push('/appsuccess');
       }
     },
-    // 获取当月最后一天日期
-    getLastDay:function(){
-      var year = new Date().getFullYear(); 
-      var month = new Date().getMonth() + 1; 
-      var lastDate = new Date(year, month , 0).getDate();
-      month = month < 10 ? '0' + month : month ;
-      let day = `${year}年${month}月${lastDate}日`;
-      return day;
-    }
   }
 } 
 </script>
