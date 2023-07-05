@@ -6,7 +6,10 @@
     </div>
     <div class="order-center">
       <div class="order-btn success-btn" @click="handleReceive">立即使用</div>
-      <p class="order-info">每月可享30G移动云手机定向流量</p>
+      <p class="order-info">
+        <span>每月可享30G移动云手机定向流量</span>
+        <span v-if="expireTime">，有效期至{{expireTime}}</span>
+      </p>
       <p class="order-info pb16">
         <span>成功领取</span>
         <span class="order-em"> 可在移动云手机APP、H5和微信小程序享受免流服务</span>
@@ -16,8 +19,8 @@
         <div class="order-body">
           <div v-for="item in ruleList" :key="item.id">
             <span class="order-subtitle" v-if="item.type === 'title'">{{item.content}}</span>
-            <div v-for="child in item.content" v-else :key="child">
-              <span class="order-content">{{child}}</span>
+            <div v-for="(child,index) in item.content" v-else :key="child">
+              <span :class="['order-content',index === 1 && item.id===13 && 'order-strong']">{{child}}</span>
             </div>
           </div>
         </div>
@@ -27,6 +30,7 @@
 </template>
 
 <script>
+import {pointReporting} from '../api/index';
 export default {
   name: 'AppSuccess',
   props: {
@@ -89,7 +93,7 @@ export default {
       },{
         id:13,
         type: 'content',
-        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能不在免流量范围']
+        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能不在免流量范围）']
       },{
         id:14,
         type: 'title',
@@ -109,17 +113,31 @@ export default {
       }],
       mobilemask:'',
       expireTime:'',
+      mobile:'',
       timer:null,
       channelSrc:''
     }
   },
   created:function() {
-    this.mobilemask = window.sessionStorage.getItem('mobilemask');
-    this.expireTime = window.sessionStorage.getItem('expireTime');
-    this.channelSrc = window.sessionStorage.getItem('channelSrc');
+    if(window.sessionStorage.getItem('isLogin')) {
+      this.mobilemask = window.sessionStorage.getItem('mobilemask');
+      this.expireTime = window.sessionStorage.getItem('expireTime');
+      this.channelSrc = window.sessionStorage.getItem('channelSrc');
+      this.mobile = window.sessionStorage.getItem('mobile');
+      pointReporting({},{
+        userAccount: this.mobile,
+        action: '云手机H5免流访问页面'
+      }).then();
+    } else {
+      this.$router.push('/apporder');
+    }
   },
   methods: {
     handleReceive:function() {
+      pointReporting({},{
+          userAccount: this.mobile,
+          action: '云手机H5免流点击使用'
+      }).then();
       let u = navigator.userAgent;
       let isAndroid = u.indexOf('Android') > -1 || u.indexOf('Adr') > -1;
       if(!isAndroid) {
@@ -155,7 +173,7 @@ export default {
 .success {
   width: 100%;
   overflow: hidden;
-  background-color: rgb(35,139,254);
+  background-color: rgb(141,192,255);
   background-image:url("../assets/success.jpg");
   background-repeat: no-repeat;
   background-size:100% auto;

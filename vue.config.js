@@ -26,6 +26,15 @@ module.exports = {
           "^/apaas": "/apaas" // 替换target中的请求地址
         }
       },
+      "/cloudphone": {
+        target: "http://cc-hwy.cmtest.xyz",
+        secure:true,
+        changeOrigin: true,
+        pathRewrite: {
+          // 路径重写，
+          "^/cloudphone": "/cloudphone" // 替换target中的请求地址
+        }
+      }
     }
   }
 };

@@ -39,9 +39,13 @@
     font-size:0.625rem;
     margin:0;
     text-align: center;
+    padding-bottom: 0.3rem;
+}
+.order-strong {
+    font-weight: 500;
 }
 .order-em {
-    color:#ff0055;
+    color:#e36438;
 }
 .pb16 {
     padding-bottom:1rem;
@@ -80,6 +84,7 @@
     height:100%;
     position: fixed;
     top: 0;
+    left:0;
     z-index:999;
     background-color: rgba(0,0,0,0.6)
 }

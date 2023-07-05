@@ -6,7 +6,10 @@
     </div>
     <div class="order-center">
       <div class="order-btn" @click="handleReceive">0元领取</div>
-      <p class="order-info">每月可享30G移动云手机定向流量</p>
+      <p class="order-info">
+        <span>每月可享30G移动云手机定向流量</span>
+        <span v-if="expireTime">，有效期至{{expireTime}}</span>
+      </p>
       <p class="order-info pb16">
         <span>成功领取</span>
         <span class="order-em"> 可在移动云手机APP、H5和微信小程序享受免流服务</span>
@@ -16,9 +19,9 @@
         <div class="order-body">
           <div v-for="item in ruleList" :key="item.id">
             <span class="order-subtitle" v-if="item.type === 'title'">{{item.content}}</span>
-            <div v-for="child in item.content" v-else :key="child">
-              <span class="order-content">{{child}}</span>
-            </div>
+            <div v-for="(child,index) in item.content" v-else :key="child">
+              <span :class="['order-content',index === 1 && item.id===13 && 'order-strong']">{{child}}</span>
+            </div> 
           </div>
         </div>
       </div>
@@ -79,7 +82,8 @@ import {
   checkOrder,
   getSMS,
   smsCodeCheck,
-  getTraffic } from '../api/index';
+  getTraffic,
+  pointReporting} from '../api/index';
 
 import { showFailToast, showSuccessToast,showLoadingToast, closeToast } from 'vant';
 import 'vant/es/toast/style';
@@ -146,7 +150,7 @@ export default {
       },{
         id:13,
         type: 'content',
-        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能不在免流量范围']
+        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能不在免流量范围）']
       },{
         id:14,
         type: 'title',
@@ -204,6 +208,10 @@ export default {
       this.mobilemask = window.sessionStorage.getItem('mobilemask');
       this.mobile = window.sessionStorage.getItem('mobile');
       this.isLogin = window.sessionStorage.getItem('isLogin');
+      pointReporting({},{
+        userAccount: this.mobile,
+        action: '云手机H5免流访问页面'
+      }).then();
       this.checkOrder();
     }
     if (window.location.search.includes('channelSrc=')) {
@@ -241,6 +249,25 @@ export default {
       // 校验token是否有效
       tokenValidate(params).then(res => {
         if (res.data.success) {
+          pointReporting({},{
+            userAccount: res.data.data.msisdn,
+            action: '云手机H5免流访问页面'
+          }).then();
+          pointReporting({},{
+            userAccount: res.data.data.msisdn,
+            action: '云手机H5免流登录成功'
+          }).then();
+          if(type === 'default') {
+            pointReporting({},{
+              userAccount: res.data.data.msisdn,
+              action: '云手机H5免流单点登录成功'
+            }).then();
+          } else {
+            pointReporting({},{
+              userAccount: res.data.data.msisdn,
+              action: '云手机H5免流4G/5G取号登录成功'
+            }).then();
+          }
           this.mobilemask = res.data.data.msisdnmask;
           this.mobile = res.data.data.msisdn;
           this.isLogin = true;
@@ -324,8 +351,18 @@ export default {
       this.isSuccess = false;
       this.isRepeat = false;
       if (this.isLogin) {
+        pointReporting({},{
+          userAccount: this.mobile,
+          action: '云手机H5免流点击领取'
+        }).then();
         checkOrder({telephone:this.mobile}).then(res => {
-          if (res.data.success && res.data.data.status === 'TRUE') {
+          if (res.data.success && (res.data.data.status === 'TRUE' || 
+        res.data.data.status === 'PROCESS' || res.data.data.status === 'CANCELING')) {
+            let expireTime = res.data.data.expireTime.split('');
+            expireTime.splice(4,0,'年');
+            expireTime.splice(7,0,'月')
+            expireTime.push('日');
+            this.expireTime = expireTime.join('');
             this.isOrder = true;
             this.dialogShow = true;
             document.documentElement.style.overflowY = 'hidden';
@@ -355,6 +392,10 @@ export default {
       });
       getTraffic({telephone:this.mobile}).then(res => {
         if (res.data.success) {
+          pointReporting({},{
+            userAccount: this.mobile,
+            action: '云手机H5免流领取成功'
+          }).then();
           closeToast();
           this.dialogShow = true;
           document.documentElement.style.overflowY = 'hidden';
@@ -478,6 +519,19 @@ export default {
           this.smsShow = false;
           document.documentElement.style.overflowY = 'auto';
           let msisdn = res.data.data.msisdn;
+          this.mobile = res.data.data.msisdn;
+          pointReporting({},{
+            userAccount: res.data.data.msisdn,
+            action: '云手机H5免流访问页面'
+          }).then();
+          pointReporting({},{
+            userAccount: res.data.data.msisdn,
+            action: '云手机H5免流登录成功'
+          }).then();
+          pointReporting({},{
+              userAccount: res.data.data.msisdn,
+              action: '云手机H5免流短验登录成功'
+          }).then();
           msisdn = msisdn.split('');
           msisdn.splice(3,4,'****');
           msisdn = msisdn.join('');
@@ -543,7 +597,7 @@ export default {
 .order {
   width: 100%;
   overflow: hidden;
-  background-color: rgb(35,139,254);
+  background-color: rgb(141,192,255);
   background-image: url('../assets/home.jpg');
   background-repeat: no-repeat;
   background-size: 100% auto;
