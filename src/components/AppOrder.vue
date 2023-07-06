@@ -35,12 +35,14 @@
         <img src="../assets/sms-bgd.png" alt="" class="sms-bgd"/>
         <p>登录</p>
         <van-cell-group inset>
-          <van-field v-model="mobile" label="" placeholder="请输入手机号" class="sms-input"/>
+          <van-field v-model="mobile" label="" autocomplete="off" placeholder="请输入手机号" type="number" clearable class="sms-input"/>
         </van-cell-group>
         <van-field
           v-model="smsCode"
           center
           clearable
+          type="number"
+          autocomplete="off"
           placeholder="请输入验证码"
           class="sms-cell code-input"
         >
@@ -150,7 +152,7 @@ export default {
       },{
         id:13,
         type: 'content',
-        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能不在免流量范围）']
+        content:['在中国移动2G/3G/4G/5G网络下（不包括手机号码处于国际及港澳台地区漫游状态、手机作为热点、利用手机设置代理服务器或VPN方式、使用CMWAP接入点方式等情况访问APP所产生的流量），下列使用场景优先消耗移动云手机定向流量（简称“免流”或“免流量”）：','在【移动云手机】的APP、H5、微信小程序内：通过“云手机”-“进入云机”进入云手机（云机）桌面后，在云手机内下载和使用各类应用。（“精彩发现”模块、“个人中心”模块和“应用上传”功能模块不在免流量范围）']
       },{
         id:14,
         type: 'title',
@@ -158,7 +160,7 @@ export default {
       },{
         id:15,
         type: 'content',
-        content:['（1）如话费余额不足将无法开通，需用户续费后再尝试。','（2）携号转入用户可能存在信息延迟，建议在转网48小时后再参与。','（3）若当月移动云手机定向流量使用超出30GB，则超出部分默认按用户当前资费套餐执行结算。','（4）移动云手机定向流量的使用遵循各省每月流量总量封顶规则，总流量使用超出封顶额度后用户可能会断网或降速，详询本地10086。','（5）用户需使用开通该30G定向流量的手机账号登录使用移动云手机客户端时，才能进行免流量。']
+        content:['（1）如话费余额不足将无法开通，需用户续费后再尝试。','（2）携号转入用户可能存在信息延迟，建议在转网48小时后再参与。','（3）若当月移动云手机定向流量使用超出30GB，则超出部分默认按用户当前资费套餐执行结算。','（4）移动云手机定向流量的使用遵循各省每月流量总量封顶规则，总流量使用超出封顶额度后用户可能会断网或降速，详询本地10086','（5）用户需使用开通该30G定向流量的手机账号登录使用移动云手机客户端时，才能进行免流量。']
       },{
         id:16,
         type: 'title',
@@ -174,7 +176,7 @@ export default {
         'kp.freetraffic.0002':'请求移动网络失败',
         'kp.freetraffic.1000':'无效的token',
         'kp.freetraffic.1001':'发送短信验证码失败',
-        'kp.freetraffic.1002':'登录失败',
+        'kp.freetraffic.1002':'请输入正确验证码',
         'kp.freetraffic.2000':'下单失败',
         'kp.freetraffic.2001':'下单结果未返回',
         'kp.freetraffic.2002':'幂等校验失败，请重试',
@@ -244,6 +246,7 @@ export default {
         appId: type === 'default' ? '001326' : '000621',
         appType: '5',
         token: this.token,
+        idType: type === 'default' ? '0' : '1',
         userInformation: type === 'default' ? '' : this.userInformation
       };
       // 校验token是否有效
@@ -413,61 +416,6 @@ export default {
           showFailToast(this.messageMap[err.data.errCode]);
         }
       })
-    },
-    // 定时器轮询调用接口
-    handleProcessing:function() {
-      clearTimeout(this.trafficTimer);
-      // 超过5秒超时
-      if (new Date().getTime() - this.startTime > 5 * 1000) {
-        closeToast();
-        clearTimeout(this.trafficTimer);
-        showFailToast('领取超时');
-        return;
-      }
-
-      this.trafficTimer = setTimeout(() => {
-        checkOrder({
-          telephone: this.mobile
-        }).then(res => {
-          // 履约回调
-          if (res.data.success) {
-            this.expireTime = res.data.data.expireTime;
-            if (res.data.data.status === 'TRUE') {
-              closeToast();
-              clearTimeout(this.trafficTimer);
-              this.dialogShow = true;
-              document.documentElement.style.overflowY = 'hidden';
-              this.isSuccess = true;
-            } else if (res.data.data.status === 'PENDING') {
-              this.handleProcessing();
-            } else {
-              closeToast();
-              clearTimeout(this.trafficTimer);
-              const toastMap = {
-                'PROCESS': '您已成功领取免流权益，',
-                'CANCELING': '您已成功领取免流权益，',
-                'FALSE': '免流权益领取失败，请稍后再试'
-              };
-              this.dialogShow = true;
-              document.documentElement.style.overflowY = 'hidden';
-              this.toastTitle = toastMap[res.data.data.status];
-              this.isRepeat = res.data.data.status !== 'FALSE';
-            }
-          } else {
-            closeToast();
-            clearTimeout(this.trafficTimer);
-            this.dialogShow = true;
-            document.documentElement.style.overflowY = 'hidden';
-            this.toastTitle = '免流权益领取失败，请稍后再试';
-          }
-        },err => {
-          if(err.data.errCode) {
-            closeToast();
-            clearTimeout(this.trafficTimer);
-            showFailToast(this.messageMap[err.data.errCode]);
-          }
-        })
-      }, 3000);
     },
     // 获取验证码
     getSMSCode:function() {
@@ -643,12 +591,14 @@ export default {
 }
 .sms-input {
   border-bottom: 0.0625rem solid rgb(169,211,253);
+  background-color:#fff !important;
 }
 .sms-cell {
   margin:0 1rem 2.5rem;
   box-sizing: border-box;
   width: 86%;
   padding-right: 0;
+  background-color:#fff !important;
 }
 .sms-cell.van-cell::before {
   position: absolute;
