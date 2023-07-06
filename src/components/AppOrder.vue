@@ -246,7 +246,7 @@ export default {
         appId: type === 'default' ? '001326' : '000621',
         appType: '5',
         token: this.token,
-        idType: type === 'default' ? '0' : '1',
+        idtype: type === 'default' ? '0' : '1',
         userInformation: type === 'default' ? '' : this.userInformation
       };
       // 校验token是否有效

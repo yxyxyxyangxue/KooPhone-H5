@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import {pointReporting} from '../api/index';
+import {pointReporting,checkOrder} from '../api/index';
 export default {
   name: 'AppSuccess',
   props: {
@@ -128,6 +128,9 @@ export default {
         userAccount: this.mobile,
         action: '云手机H5免流访问页面'
       }).then();
+      if(this.expireTime === '') {
+        this.getTime();
+      }
     } else {
       this.$router.push('/apporder');
     }
@@ -164,6 +167,18 @@ export default {
           }
         }
       }
+    },
+    getTime:function() {
+      checkOrder({telephone:this.mobile}).then(res => {
+          if (res.data.success && (res.data.data.status === 'TRUE' || 
+        res.data.data.status === 'PROCESS' || res.data.data.status === 'CANCELING')) {
+            let expireTime = res.data.data.expireTime.split('');
+            expireTime.splice(4,0,'年');
+            expireTime.splice(7,0,'月')
+            expireTime.push('日');
+            this.expireTime = expireTime.join('');
+          }
+      });
     }
   }
 }
