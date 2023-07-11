@@ -27,6 +27,20 @@
       </div>
     </div>
   </div>
+   <!-- 提示弹窗 -->
+  <div v-if="dialogShow" class="mask">
+    <div class="sms-layout">
+      <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm()"/>
+      <div class="sms-center">
+        <div>
+          <p class="toast-title">
+            <span>网络异常，请稍后再试</span>
+          </p>
+        </div>
+        <div class="sms-btn" @click="toastConfirm()">确认</div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -115,28 +129,31 @@ export default {
       expireTime:'',
       mobile:'',
       timer:null,
-      channelSrc:''
+      channelSrc:'',
+      dialogShow: false
     }
   },
   created:function() {
     if(window.sessionStorage.getItem('isLogin')) {
       this.mobilemask = window.sessionStorage.getItem('mobilemask');
-      this.expireTime = window.sessionStorage.getItem('expireTime');
       this.channelSrc = window.sessionStorage.getItem('channelSrc');
       this.mobile = window.sessionStorage.getItem('mobile');
       pointReporting({},{
         userAccount: this.mobile,
         action: '云手机H5免流访问页面'
       }).then();
-      if(this.expireTime === '') {
-        this.getTime();
-      }
+      this.getTime();
     } else {
       this.$router.push('/apporder');
     }
   },
   methods: {
     handleReceive:function() {
+      if(!window.navigator.onLine) {
+        this.dialogShow = true;
+        document.documentElement.style.overflowY = 'hidden';
+        return;
+      }
       pointReporting({},{
           userAccount: this.mobile,
           action: '云手机H5免流点击使用'
@@ -179,6 +196,11 @@ export default {
             this.expireTime = expireTime.join('');
           }
       });
+    },
+    // 提示窗关闭
+    toastConfirm:function() {
+      this.dialogShow = false;
+      document.documentElement.style.overflowY = 'auto';
     }
   }
 }

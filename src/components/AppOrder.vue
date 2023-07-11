@@ -35,13 +35,21 @@
         <img src="../assets/sms-bgd.png" alt="" class="sms-bgd"/>
         <p>登录</p>
         <van-cell-group inset>
-          <van-field v-model="mobile" label="" autocomplete="off" placeholder="请输入手机号" type="number" clearable class="sms-input"/>
+          <van-field v-model="mobile"
+          label=""
+          autocomplete="off"
+          placeholder="请输入手机号"
+          type="number"
+          maxlength="11" 
+          clearable 
+          class="sms-input"/>
         </van-cell-group>
         <van-field
           v-model="smsCode"
           center
           clearable
           type="number"
+          maxlength="6"
           autocomplete="off"
           placeholder="请输入验证码"
           class="sms-cell code-input"
@@ -89,6 +97,7 @@ import {
 
 import { showFailToast, showSuccessToast,showLoadingToast, closeToast } from 'vant';
 import 'vant/es/toast/style';
+import '@vant/touch-emulator';
 
 export default {
   name: 'AppOrder',
@@ -304,7 +313,6 @@ export default {
           expireTime.push('日');
           this.expireTime = expireTime.join('');
           this.isOrder = true;
-          window.sessionStorage.setItem('expireTime', this.expireTime);
           window.sessionStorage.setItem('channelSrc', this.channelSrc);
           this.$router.push('/appsuccess');
         }
@@ -353,6 +361,12 @@ export default {
     handleReceive:function() {
       this.isSuccess = false;
       this.isRepeat = false;
+      if(!window.navigator.onLine) {
+        this.dialogShow = true;
+        document.documentElement.style.overflowY = 'hidden';
+        this.toastTitle = '网络异常，请稍后再试';
+        return;
+      }
       if (this.isLogin) {
         pointReporting({},{
           userAccount: this.mobile,
@@ -411,8 +425,8 @@ export default {
         }
       },
       err => {
+        closeToast();
         if(err.data.errCode) {
-          closeToast();
           showFailToast(this.messageMap[err.data.errCode]);
         }
       })
@@ -532,11 +546,10 @@ export default {
       document.documentElement.style.overflowY = 'auto';
       if (this.isSuccess && type === '1') {
         window.sessionStorage.setItem('mobilemask', this.mobilemask);
-        window.sessionStorage.setItem('expireTime', this.expireTime);
         window.sessionStorage.setItem('channelSrc', this.channelSrc);
         this.$router.push('/appsuccess');
       }
-    },
+    }
   }
 } 
 </script>
@@ -552,95 +565,75 @@ export default {
   position: relative;
 }
 .sms-layout {
-  position: absolute;
-  top:50%;
-  left:50%;
-  transform: translate(-50%,-50%);
-  z-index:101;
-}
-.sms-center {
-  background-color:#fff;
-  border-radius: 0.625rem;
-  padding: 2rem 0.875rem 1.625rem;
-  width: 17rem;
-  box-sizing: border-box;
-  position: relative;
-  clear: both;
-}
-.close-icon {
-  width:1.625rem;
-  height:1.625rem;
-  padding-bottom:0.625rem;
-  float: right;
-}
-.sms-bgd {
-  width:100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-.sms-layout p {
-  font-size: 1rem;
-  color: #000;
-  font-weight: 500;
-  text-align: center;
-  margin:0;
-  padding-bottom:1.875rem;    
-  z-index: 1;
-  position: relative;
-}
-.sms-input {
-  border-bottom: 0.0625rem solid rgb(169,211,253);
-  background-color:#fff !important;
-}
-.sms-cell {
-  margin:0 1rem 2.5rem;
-  box-sizing: border-box;
-  width: 86%;
-  padding-right: 0;
-  background-color:#fff !important;
-}
-.sms-cell.van-cell::before {
-  position: absolute;
-  box-sizing: border-box;
-  content: " ";
-  bottom:0;
-  left:0.25rem;
-  height:0.0625rem;
-  width:53%;
-  background-color: rgb(169,211,253);
-}
-.sms-cell.van-cell::after {
-  display: none;
-}
-.sms-layout .sms-center .toast-title {
-  font-size:0.75rem;
-  text-align: center;
-  color:rgba(0,0,0,0.8);
-  padding-top:1.75rem;
-  padding-bottom:2.5rem;
-}
-.sms-layout .sms-center .toast-info {
-  display: inline-block;
-}
-.dialog-success {
-  font-size:1rem;
-  color:rgb(237,147,38);
-  text-align: center;
-  line-height: 1.2;
-}
-.dialog-success img {
-  width:100%;
-  background-size:100% auto;
-}
-.dialog-success p {
-  font-size:0.75rem;
-  text-align: center;
-  color:rgba(0,0,0,0.8);
-  padding-bottom: 1.375rem;
-}
-.dialog-success .dialog-content {
-  position: relative;
-  top:0.625rem;
-}
+    position: absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50%,-50%);
+    z-index:101;
+  }
+  .sms-center {
+    background-color:#fff;
+    border-radius: 0.625rem;
+    padding: 2rem 0.875rem 1.625rem;
+    width: 17rem;
+    box-sizing: border-box;
+    position: relative;
+    clear: both;
+  }
+  .close-icon {
+    width:1.625rem;
+    height:1.625rem;
+    padding-bottom:0.625rem;
+    float: right;
+  }
+  .sms-bgd {
+    width:100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .sms-layout p {
+    font-size: 1rem;
+    color: #000;
+    font-weight: 500;
+    text-align: center;
+    margin:0;
+    padding-bottom:1.875rem;    
+    z-index: 1;
+    position: relative;
+  }
+  .sms-input {
+    border-bottom: 0.0625rem solid rgb(169,211,253);
+    background-color:#fff !important;
+  }
+  .sms-cell {
+    margin:0 1rem 2.5rem;
+    box-sizing: border-box;
+    width: 86%;
+    padding-right: 0;
+    background-color:#fff !important;
+  } 
+  .sms-cell.van-cell::before {
+    position: absolute;
+    box-sizing: border-box;
+    content: " ";
+    bottom:0;
+    left:0.25rem;
+    height:0.0625rem;
+    width:53%;
+    background-color: rgb(169,211,253);
+  }
+  .sms-cell.van-cell::after {
+    display: none;
+  }
+  .sms-layout .sms-center .toast-title {
+    font-size:0.75rem;
+    text-align: center;
+    color:rgba(0,0,0,0.8);
+    padding-top:1.75rem;
+    padding-bottom:2.5rem;
+  }
+  .sms-layout .sms-center .toast-info {
+    display: inline-block;
+  }
 </style>
