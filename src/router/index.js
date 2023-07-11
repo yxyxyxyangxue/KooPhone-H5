@@ -1,22 +1,22 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
  
-const routerHistory = createWebHistory()
+const routerHash = createWebHashHistory()
 
 const AppOrder = () => import('../components/AppOrder')
 const AppSuccess = () => import('../components/AppSuccess')
 
 const routes =[
     {
-        path: '/', 
-        redirect: '/AppOrder',
+        path: '', 
+        redirect: '/apporder',
     },
     {
-        path: '/AppOrder',
+        path: '/apporder',
         name: 'AppOrder',
         component: AppOrder
     },
     {
-        path: '/AppSuccess',
+        path: '/appsuccess',
         name: 'AppSuccess',
         component: AppSuccess
     }
@@ -24,7 +24,7 @@ const routes =[
 
 
 const router = createRouter({
-  history: routerHistory,
+  history: routerHash,
   routes
 })
 export default router
