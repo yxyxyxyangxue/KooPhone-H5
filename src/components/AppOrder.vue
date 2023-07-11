@@ -68,10 +68,11 @@
     <div class="sms-layout">
       <img src="../assets/close-icon.png" alt="" class="close-icon" @click="toastConfirm('0')"/>
       <div class="sms-center">
-        <div class="dialog-success" v-if="isSuccess">
-          <div class="dialog-content">恭喜领取成功</div>
-          <img src="../assets/success-bgd.png" alt=""/>
-          <p>具体开通情况/时间以短信通知为准</p>
+        <div v-if="isSuccess">
+          <div class="toast-title">
+            <h6>订单已受理，开通中</h6>
+            <span>实际生效情况以短信通知为准</span>
+          </div>
         </div>
         <div v-else>
           <p class="toast-title">
@@ -632,6 +633,10 @@ export default {
     color:rgba(0,0,0,0.8);
     padding-top:1.75rem;
     padding-bottom:2.5rem;
+  }
+  .toast-title h6 {
+    margin-top:0;
+    margin-bottom: 0.625rem;
   }
   .sms-layout .sms-center .toast-info {
     display: inline-block;
